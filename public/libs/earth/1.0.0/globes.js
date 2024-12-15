@@ -242,7 +242,7 @@ function standardGlobe() {
 }
 
 function newGlobe(source, view) {
-  let result = _.extend(standardGlobe(), source);
+  let result = Object.assign(standardGlobe(), source);
   result.projection = result.newProjection(view);
   return result;
 }

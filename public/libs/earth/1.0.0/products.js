@@ -18,7 +18,7 @@ const products = (function () {
   };
 
   function buildProduct(overrides) {
-    return _.extend(
+    return Object.assign(
       {
         description: "",
         paths: [],
@@ -33,7 +33,7 @@ const products = (function () {
           ) {
             return cancel.requested
               ? null
-              : _.extend(me, buildGrid(me.builder.apply(me, files)));
+              : Object.assign(me, buildGrid(me.builder.apply(me, files)));
           });
         },
       },

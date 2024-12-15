@@ -73,21 +73,17 @@ let report = (function () {
   };
 })();
 
-let newAgent = () => {
-  return micro.newAgent().on({ reject: report.error, fail: report.error });
-};
-
 // Construct the page's main internal components:
 
 let configuration = micro.buildConfiguration(globes, products.overlayTypes); // holds the page's current configuration settings
 let inputController = buildInputController(); // interprets drag/zoom operations
-let meshAgent = newAgent(); // map data for the earth
-let globeAgent = newAgent(); // the model of the globe
-let gridAgent = newAgent(); // the grid of weather data
-let rendererAgent = newAgent(); // the globe SVG renderer
-let fieldAgent = newAgent(); // the interpolated wind vector field
-let animatorAgent = newAgent(); // the wind animator
-let overlayAgent = newAgent(); // color overlay over the animation
+let meshAgent = micro.newAgent(); // map data for the earth
+let globeAgent = micro.newAgent(); // the model of the globe
+let gridAgent = micro.newAgent(); // the grid of weather data
+let rendererAgent = micro.newAgent(); // the globe SVG renderer
+let fieldAgent = micro.newAgent(); // the interpolated wind vector field
+let animatorAgent = micro.newAgent(); // the wind animator
+let overlayAgent = micro.newAgent(); // color overlay over the animation
 
 /**
  * The input controller is an object that translates move operations (drag and/or zoom) into mutations of the
@@ -211,7 +207,7 @@ function buildInputController() {
     dispatch.trigger("moveEnd");
   }
 
-  let dispatch = _.extend(
+  let dispatch = Object.assign(
     {
       globe: function (_) {
         if (_) {
@@ -222,7 +218,7 @@ function buildInputController() {
         return _ ? this : globe;
       },
     },
-    Backbone.Events
+    micro.Events
   );
   return dispatch.listenTo(configuration, "change:orientation", reorient);
 }
@@ -325,7 +321,7 @@ function buildRenderer(mesh, globe) {
   log.time("rendering map");
 
   // UNDONE: better way to do the following?
-  let dispatch = _.clone(Backbone.Events);
+  let dispatch = _.clone(micro.Events);
   if (rendererAgent._previous) {
     rendererAgent._previous.stopListening();
   }
@@ -1100,10 +1096,11 @@ function init() {
   function cancelInterpolation() {
     fieldAgent.cancel.requested = true;
   }
-  fieldAgent.listenTo(gridAgent, "update", startInterpolation);
-  fieldAgent.listenTo(rendererAgent, "render", startInterpolation);
-  fieldAgent.listenTo(rendererAgent, "start", cancelInterpolation);
-  fieldAgent.listenTo(rendererAgent, "redraw", cancelInterpolation);
+  gridAgent.on("update", startInterpolation);
+  rendererAgent.on("render", startInterpolation);
+  // rendererAgent.on( "render", startInterpolation);
+  rendererAgent.on("start", cancelInterpolation);
+  rendererAgent.on("redraw", cancelInterpolation);
 
   animatorAgent.listenTo(fieldAgent, "update", function (field) {
     animatorAgent.submit(animate, globeAgent.value(), field, gridAgent.value());
@@ -1203,12 +1200,11 @@ function init() {
       if (attr.date === "current") {
         // configuration.save(ocean);
       } else {
-        Promise
-          .all(products.productsFor(_.extend(attr, ocean)))
+        Promise.all(products.productsFor(Object.assign(attr, ocean)))
           .then(function (product) {
             if (product.date) {
               // configuration.save(
-              //   _.extend(ocean, micro.dateToConfig(product.date))
+              //   Object.assign(ocean, micro.dateToConfig(product.date))
               // );
             }
           })
