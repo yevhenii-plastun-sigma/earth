@@ -8,20 +8,16 @@
  */
 const micro = (function () {
   "use strict";
-  var wrapError = function(model, options) {
-    var error = options.error;
+  let wrapError = function(model, options) {
+    let error = options.error;
     options.error = function(resp) {
       if (error) error(model, resp, options);
       model.trigger('error', model, resp, options);
     };
   };
-  var array = [];
-  var push = array.push;
-  var slice = array.slice;
-  var splice = array.splice;
-  var eventSplitter = /\s+/;
-  var triggerEvents = function(events, args) {
-    var ev, i = -1, l = events.length, a1 = args[0], a2 = args[1], a3 = args[2];
+  let eventSplitter = /\s+/;
+  let triggerEvents = function(events, args) {
+    let ev, i = -1, l = events.length, a1 = args[0], a2 = args[1], a3 = args[2];
     switch (args.length) {
       case 0: while (++i < l) (ev = events[i]).callback.call(ev.ctx); return;
       case 1: while (++i < l) (ev = events[i]).callback.call(ev.ctx, a1); return;
@@ -34,12 +30,12 @@ const micro = (function () {
   // Implement fancy features of the Events API such as multiple event
   // names `"change blur"` and jQuery-style event maps `{change: action}`
   // in terms of the existing API.
-  var eventsApi = function(obj, action, name, rest) {
+  let eventsApi = function(obj, action, name, rest) {
     if (!name) return true;
 
     // Handle event maps.
     if (typeof name === 'object') {
-      for (var key in name) {
+      for (let key in name) {
         obj[action].apply(obj, [key, name[key]].concat(rest));
       }
       return false;
@@ -47,8 +43,8 @@ const micro = (function () {
 
     // Handle space separated event names.
     if (eventSplitter.test(name)) {
-      var names = name.split(eventSplitter);
-      for (var i = 0, l = names.length; i < l; i++) {
+      let names = name.split(eventSplitter);
+      for (let i = 0, l = names.length; i < l; i++) {
         obj[action].apply(obj, [names[i]].concat(rest));
       }
       return false;
@@ -120,7 +116,7 @@ const micro = (function () {
     // receive the true name of the event as the first argument).
     trigger: function(name) {
       if (!this._events) return this;
-      let args = slice.call(arguments, 1);
+      let args = [...arguments].slice(1);
       if (!eventsApi(this, 'trigger', name, args)) return this;
       let events = this._events[name];
       let allEvents = this._events.all;
@@ -146,16 +142,16 @@ const micro = (function () {
     },
 
     listenTo: function(obj, name, callback) {
-      var listeningTo = this._listeningTo || (this._listeningTo = {});
-      var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
+      let listeningTo = this._listeningTo || (this._listeningTo = {});
+      let id = obj._listenId || (obj._listenId = _.uniqueId('l'));
       listeningTo[id] = obj;
       if (!callback && typeof name === 'object') callback = this;
       obj.on(name, callback, this);
       return this;
     },
     listenToOnce: function(obj, name, callback) {
-      var listeningTo = this._listeningTo || (this._listeningTo = {});
-      var id = obj._listenId || (obj._listenId = _.uniqueId('l'));
+      let listeningTo = this._listeningTo || (this._listeningTo = {});
+      let id = obj._listenId || (obj._listenId = _.uniqueId('l'));
       listeningTo[id] = obj;
       if (!callback && typeof name === 'object') callback = this;
       obj.once(name, callback, this);
@@ -163,8 +159,8 @@ const micro = (function () {
     }
   };
 
-  var Model  = function(attributes, options) {
-    var attrs = attributes || {};
+  let Model  = function(attributes, options) {
+    let attrs = attributes || {};
     options || (options = {});
     this.cid = _.uniqueId('c');
     this.attributes = {};
@@ -224,7 +220,7 @@ const micro = (function () {
     // the core primitive operation of a model, updating the data and notifying
     // anyone who needs to know about the change in state. The heart of the beast.
     set: function(key, val, options) {
-      var attr, attrs, unset, changes, silent, changing, prev, current;
+      let attr, attrs, unset, changes, silent, changing, prev, current;
       if (key == null) return this;
 
       // Handle both `"key", value` and `{key: value}` -style arguments.
@@ -271,7 +267,7 @@ const micro = (function () {
       // Trigger all relevant attribute changes.
       if (!silent) {
         if (changes.length) this._pending = true;
-        for (var i = 0, l = changes.length; i < l; i++) {
+        for (let i = 0, l = changes.length; i < l; i++) {
           this.trigger('change:' + changes[i], this, current[changes[i]], options);
         }
       }
@@ -298,8 +294,8 @@ const micro = (function () {
 
     // Clear all attributes on the model, firing `"change"`.
     clear: function(options) {
-      var attrs = {};
-      for (var key in this.attributes) attrs[key] = void 0;
+      let attrs = {};
+      for (let key in this.attributes) attrs[key] = void 0;
       return this.set(attrs, _.extend({}, options, {unset: true}));
     },
 
@@ -318,9 +314,9 @@ const micro = (function () {
     // determining if there *would be* a change.
     changedAttributes: function(diff) {
       if (!diff) return this.hasChanged() ? _.clone(this.changed) : false;
-      var val, changed = false;
-      var old = this._changing ? this._previousAttributes : this.attributes;
-      for (var attr in diff) {
+      let val, changed = false;
+      let old = this._changing ? this._previousAttributes : this.attributes;
+      for (let attr in diff) {
         if (_.isEqual(old[attr], (val = diff[attr]))) continue;
         (changed || (changed = {}))[attr] = val;
       }
@@ -346,8 +342,8 @@ const micro = (function () {
     fetch: function(options) {
       options = options ? _.clone(options) : {};
       if (options.parse === void 0) options.parse = true;
-      var model = this;
-      var success = options.success;
+      let model = this;
+      let success = options.success;
       options.success = function(resp) {
         if (!model.set(model.parse(resp, options), options)) return false;
         if (success) success(model, resp, options);
@@ -361,7 +357,7 @@ const micro = (function () {
     // If the server returns an attributes hash that differs, the model's
     // state will be `set` again.
     save: function(key, val, options) {
-      var attrs, method, xhr, attributes = this.attributes;
+      let attrs, method, xhr, attributes = this.attributes;
 
       // Handle both `"key", value` and `{key: value}` -style arguments.
       if (key == null || typeof key === 'object') {
@@ -390,12 +386,12 @@ const micro = (function () {
       // After a successful server-side save, the client is (optionally)
       // updated with the server-side state.
       if (options.parse === void 0) options.parse = true;
-      var model = this;
-      var success = options.success;
+      let model = this;
+      let success = options.success;
       options.success = function(resp) {
         // Ensure attributes are restored during synchronous saves.
         model.attributes = attributes;
-        var serverAttrs = model.parse(resp, options);
+        let serverAttrs = model.parse(resp, options);
         if (options.wait) serverAttrs = _.extend(attrs || {}, serverAttrs);
         if (_.isObject(serverAttrs) && !model.set(serverAttrs, options)) {
           return false;
@@ -420,10 +416,10 @@ const micro = (function () {
     // If `wait: true` is passed, waits for the server to respond before removal.
     destroy: function(options) {
       options = options ? _.clone(options) : {};
-      var model = this;
-      var success = options.success;
+      let model = this;
+      let success = options.success;
 
-      var destroy = function() {
+      let destroy = function() {
         model.trigger('destroy', model, model.collection, options);
       };
 
@@ -439,7 +435,7 @@ const micro = (function () {
       }
       wrapError(this, options);
 
-      var xhr = this.sync('delete', this, options);
+      let xhr = this.sync('delete', this, options);
       if (!options.wait) destroy();
       return xhr;
     },
@@ -448,7 +444,7 @@ const micro = (function () {
     // using Backbone's restful methods, override this to change the endpoint
     // that will be called.
     url: function() {
-      var base = _.result(this, 'urlRoot') || _.result(this.collection, 'url') || urlError();
+      let base = _.result(this, 'urlRoot') || _.result(this.collection, 'url') || urlError();
       if (this.isNew()) return base;
       return base + (base.charAt(base.length - 1) === '/' ? '' : '/') + encodeURIComponent(this.id);
     },
@@ -479,7 +475,7 @@ const micro = (function () {
     _validate: function(attrs, options) {
       if (!options.validate || !this.validate) return true;
       attrs = _.extend({}, this.attributes, attrs);
-      var error = this.validationError = this.validate(attrs, options) || null;
+      let error = this.validationError = this.validate(attrs, options) || null;
       if (!error) return true;
       this.trigger('invalid', this, error, _.extend(options, {validationError: error}));
       return false;
@@ -488,12 +484,12 @@ const micro = (function () {
   });
 
   // Underscore methods that we want to implement on the Model.
-  var modelMethods = ['keys', 'values', 'pairs', 'invert', 'pick', 'omit'];
+  let modelMethods = ['keys', 'values', 'pairs', 'invert', 'pick', 'omit'];
 
   // Mix in each Underscore method as a proxy to `Model#attributes`.
   _.each(modelMethods, function(method) {
     Model.prototype[method] = function() {
-      var args = slice.call(arguments);
+      let args = [...arguments];
       args.unshift(this.attributes);
       return _[method].apply(_, args);
     };
