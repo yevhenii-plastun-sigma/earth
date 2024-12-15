@@ -52,9 +52,9 @@ const micro = (function () {
    * @returns {Number} distance between two points having the form [x, y].
    */
   function distance(a, b) {
-    let Δx = b[0] - a[0];
-    let Δy = b[1] - a[1];
-    return Math.sqrt(Δx * Δx + Δy * Δy);
+    let dx = b[0] - a[0];
+    let dy = b[1] - a[1];
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**
@@ -421,21 +421,21 @@ const micro = (function () {
    *
    * @returns {Array} array of scaled derivatives [dx/dλ, dy/dλ, dx/dφ, dy/dφ]
    */
-  function distortion(projection, λ, φ, x, y) {
-    let hλ = λ < 0 ? H : -H;
-    let hφ = φ < 0 ? H : -H;
-    let pλ = projection([λ + hλ, φ]);
-    let pφ = projection([λ, φ + hφ]);
+  function distortion(projection, lambda, fi, x, y) {
+    let hLambda = lambda < 0 ? H : -H;
+    let hFi = fi < 0 ? H : -H;
+    let pLambda = projection([lambda + hLambda, fi]);
+    let pFi = projection([lambda, fi + hFi]);
 
     // Meridian scale factor (see Snyder, equation 4-3), where R = 1. This handles issue where length of 1° λ
     // changes depending on φ. Without this, there is a pinching effect at the poles.
-    let k = Math.cos((φ / 360) * τ);
+    let k = Math.cos((fi / 360) * τ);
 
     return [
-      (pλ[0] - x) / hλ / k,
-      (pλ[1] - y) / hλ / k,
-      (pφ[0] - x) / hφ,
-      (pφ[1] - y) / hφ,
+      (pLambda[0] - x) / hLambda / k,
+      (pLambda[1] - y) / hLambda / k,
+      (pFi[0] - x) / hFi,
+      (pFi[1] - y) / hFi,
     ];
   }
 
@@ -480,47 +480,37 @@ const micro = (function () {
    */
   function newAgent(initial) {
     /**
-     * @returns {Function} a cancel function for a task.
-     */
-    function cancelFactory() {
-      return function cancel() {
-        cancel.requested = true;
-        return agent;
-      };
-    }
-
-    /**
      * Invokes the specified task.
      * @param cancel the task's cancel function.
      * @param taskAndArguments the [task-function-or-value, arg0, arg1, ...] array.
      */
     function runTask(cancel, taskAndArguments) {
       let task;
-      function run(args) {
+      const run = (args) => {
         return cancel.requested
           ? null
           : _.isFunction(task)
           ? task.apply(agent, args)
           : task;
-      }
+      };
 
-      function accept(result) {
+      const accept = (result) => {
         if (!cancel.requested) {
           value = result;
           agent.trigger("update", result, agent);
         }
-      }
+      };
 
-      function reject(err) {
+      const reject = (err) => {
         if (!cancel.requested) {
           // ANNOYANCE: when cancelled, this task's error is silently suppressed
           agent.trigger("reject", err, agent);
         }
-      }
+      };
 
-      function fail(err) {
+      const fail = (err) => {
         agent.trigger("fail", err, agent);
-      }
+      };
 
       try {
         // When all arguments are resolved, invoke the task then either accept or reject the result.
@@ -546,10 +536,14 @@ const micro = (function () {
         return value;
       },
 
+      cancelRequested: false,
+
       /**
        * Cancels this agent's most recently submitted task.
        */
-      cancel: cancelFactory(),
+      cancel: {
+        requested: false,
+      },
 
       /**
        * Submit a new task and arguments to invoke the task with. The task may return a promise for
@@ -559,9 +553,10 @@ const micro = (function () {
        */
       submit: function (task, arg0, arg1, and_so_on) {
         // immediately cancel the previous task
-        this.cancel();
+        this.cancel.requested = false;
+        // this.cancel = cancelFactory()
         // schedule the new task and update the agent with its associated cancel function
-        runTask_debounced((this.cancel = cancelFactory()), arguments);
+        runTask_debounced((this.cancel), arguments);
         return this;
       },
     };
@@ -641,16 +636,16 @@ const micro = (function () {
    * A Backbone.js Model that persists its attributes as a human readable URL hash fragment. Loading from and
    * storing to the hash fragment is handled by the sync method.
    */
-  let Configuration = Backbone.Model.extend({
-    id: 0,
-    _ignoreNextHashChangeEvent: false,
-    _projectionNames: null,
-    _overlayTypes: null,
+  class Configuration extends Backbone.Model {
+    id = 0;
+    _ignoreNextHashChangeEvent = false;
+    _projectionNames = null;
+    _overlayTypes = null;
 
     /**
      * @returns {String} this configuration converted to a hash fragment.
      */
-    toHash: function () {
+    toHash() {
       let attr = this.attributes;
       let dir =
         attr.date === "current" ? "current" : attr.date + "/" + attr.hour + "Z";
@@ -663,13 +658,13 @@ const micro = (function () {
       return [dir, attr.param, attr.surface, attr.level, ol, proj, grid]
         .filter(isTruthy)
         .join("/");
-    },
+    }
 
     /**
      * Synchronizes between the configuration model and the hash fragment in the URL bar. Invocations
      * caused by "hashchange" events must have the {trigger: "hashchange"} option specified.
      */
-    sync: function (method, model, options) {
+    sync(method, model, options) {
       switch (method) {
         case "read":
           if (
@@ -693,8 +688,8 @@ const micro = (function () {
           window.location.hash = model.toHash();
           break;
       }
-    },
-  });
+    }
+  }
 
   /**
    * A Backbone.js Model to hold the page's configuration as a set of attributes: date, layer, projection,

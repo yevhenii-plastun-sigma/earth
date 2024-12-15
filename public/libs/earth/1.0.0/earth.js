@@ -173,10 +173,10 @@ function buildInputController() {
 
   let signalEnd = _.debounce(function () {
     if (!op || (op.type !== "drag" && op.type !== "zoom")) {
-      configuration.save(
-        { orientation: globe.orientation() },
-        { source: "moveEnd" }
-      );
+      // configuration.save(
+      //   { orientation: globe.orientation() },
+      //   { source: "moveEnd" }
+      // );
       dispatch.trigger("moveEnd");
     }
   }, MOVE_END_WAIT); // wait for a bit to decide if user has stopped moving the globe
@@ -191,7 +191,7 @@ function buildInputController() {
           rotate = globe.locate(coord);
         if (rotate) {
           globe.projection.rotate(rotate);
-          configuration.save({ orientation: globe.orientation() }); // triggers reorientation
+          // configuration.save({ orientation: globe.orientation() }); // triggers reorientation
         }
         dispatch.trigger("click", globe.projection(coord), coord);
       }, log.error);
@@ -314,7 +314,7 @@ function navigate(step) {
   }
   let next = gridAgent.value().primaryGrid.navigate(step);
   if (next) {
-    configuration.save(micro.dateToConfig(next));
+    // configuration.save(micro.dateToConfig(next));
   }
 }
 
@@ -930,7 +930,7 @@ function clearLocationDetails(clearEverything) {
 }
 
 function stopCurrentAnimation(alsoClearCanvas) {
-  animatorAgent.cancel();
+  animatorAgent.cancel.requested = true;
   if (alsoClearCanvas) {
     micro.clearCanvas(d3.select("#animation").node());
   }
@@ -945,17 +945,17 @@ function stopCurrentAnimation(alsoClearCanvas) {
  */
 function bindButtonToConfiguration(elementId, newAttr, keys) {
   keys = keys || _.keys(newAttr);
-  d3.select(elementId).on("click", function () {
-    if (d3.select(elementId).classed("disabled")) return;
-    configuration.save(newAttr);
-  });
-  configuration.on("change", function (model) {
-    let attr = model.attributes;
-    d3.select(elementId).classed(
-      "highlighted",
-      _.isEqual(_.pick(attr, keys), _.pick(newAttr, keys))
-    );
-  });
+  // d3.select(elementId).on("click", function () {
+  //   if (d3.select(elementId).classed("disabled")) return;
+  //   configuration.save(newAttr);
+  // });
+  // configuration.on("change", function (model) {
+  //   let attr = model.attributes;
+  //   d3.select(elementId).classed(
+  //     "highlighted",
+  //     _.isEqual(_.pick(attr, keys), _.pick(newAttr, keys))
+  //   );
+  // });
 }
 
 function reportSponsorClick(type) {
@@ -1023,7 +1023,7 @@ function init() {
     configuration.fetch({ trigger: "hashchange" });
   });
 
-  configuration.on("change", report.reset);
+  // configuration.on("change", report.reset);
 
   meshAgent.listenTo(
     configuration,
@@ -1098,7 +1098,7 @@ function init() {
     fieldAgent.submit(interpolateField, globeAgent.value(), gridAgent.value());
   }
   function cancelInterpolation() {
-    fieldAgent.cancel();
+    fieldAgent.cancel.requested = true;
   }
   fieldAgent.listenTo(gridAgent, "update", startInterpolation);
   fieldAgent.listenTo(rendererAgent, "render", startInterpolation);
@@ -1155,39 +1155,39 @@ function init() {
   );
 
   // Modify menu depending on what mode we're in.
-  configuration.on("change:param", function (context, mode) {
-    d3.selectAll(".ocean-mode").classed("invisible", mode !== "ocean");
-    d3.selectAll(".wind-mode").classed("invisible", mode !== "wind");
-    switch (mode) {
-      case "wind":
-        d3.select("#nav-backward-more").attr("title", "-1 Day");
-        d3.select("#nav-backward").attr("title", "-3 Hours");
-        d3.select("#nav-forward").attr("title", "+3 Hours");
-        d3.select("#nav-forward-more").attr("title", "+1 Day");
-        break;
-      case "ocean":
-        d3.select("#nav-backward-more").attr("title", "-1 Month");
-        d3.select("#nav-backward").attr("title", "-5 Days");
-        d3.select("#nav-forward").attr("title", "+5 Days");
-        d3.select("#nav-forward-more").attr("title", "+1 Month");
-        break;
-    }
-  });
+  // configuration.on("change:param", function (context, mode) {
+  //   d3.selectAll(".ocean-mode").classed("invisible", mode !== "ocean");
+  //   d3.selectAll(".wind-mode").classed("invisible", mode !== "wind");
+  //   switch (mode) {
+  //     case "wind":
+  //       d3.select("#nav-backward-more").attr("title", "-1 Day");
+  //       d3.select("#nav-backward").attr("title", "-3 Hours");
+  //       d3.select("#nav-forward").attr("title", "+3 Hours");
+  //       d3.select("#nav-forward-more").attr("title", "+1 Day");
+  //       break;
+  //     case "ocean":
+  //       d3.select("#nav-backward-more").attr("title", "-1 Month");
+  //       d3.select("#nav-backward").attr("title", "-5 Days");
+  //       d3.select("#nav-forward").attr("title", "+5 Days");
+  //       d3.select("#nav-forward-more").attr("title", "+1 Month");
+  //       break;
+  //   }
+  // });
 
   // Add handlers for mode buttons.
   d3.select("#wind-mode-enable").on("click", function () {
     if (configuration.get("param") !== "wind") {
-      configuration.save({
-        param: "wind",
-        surface: "surface",
-        level: "level",
-        overlayType: "default",
-      });
+      // configuration.save({
+      //   param: "wind",
+      //   surface: "surface",
+      //   level: "level",
+      //   overlayType: "default",
+      // });
     }
   });
-  configuration.on("change:param", function (x, param) {
-    d3.select("#wind-mode-enable").classed("highlighted", param === "wind");
-  });
+  // configuration.on("change:param", function (x, param) {
+  //   d3.select("#wind-mode-enable").classed("highlighted", param === "wind");
+  // });
   d3.select("#ocean-mode-enable").on("click", function () {
     if (configuration.get("param") !== "ocean") {
       // When switching between modes, there may be no associated data for the current date. So we need
@@ -1201,15 +1201,15 @@ function init() {
       };
       let attr = _.clone(configuration.attributes);
       if (attr.date === "current") {
-        configuration.save(ocean);
+        // configuration.save(ocean);
       } else {
         Promise
           .all(products.productsFor(_.extend(attr, ocean)))
           .then(function (product) {
             if (product.date) {
-              configuration.save(
-                _.extend(ocean, micro.dateToConfig(product.date))
-              );
+              // configuration.save(
+              //   _.extend(ocean, micro.dateToConfig(product.date))
+              // );
             }
           })
           .catch(report.error);
@@ -1217,42 +1217,42 @@ function init() {
       stopCurrentAnimation(true); // cleanup particle artifacts over continents
     }
   });
-  configuration.on("change:param", function (x, param) {
-    d3.select("#ocean-mode-enable").classed("highlighted", param === "ocean");
-  });
+  // configuration.on("change:param", function (x, param) {
+  //   d3.select("#ocean-mode-enable").classed("highlighted", param === "ocean");
+  // });
 
   // Add logic to disable buttons that are incompatible with each other.
-  configuration.on("change:overlayType", function (x, ot) {
-    d3.select("#surface-level").classed(
-      "disabled",
-      ot === "air_density" || ot === "wind_power_density"
-    );
-  });
-  configuration.on("change:surface", function (x, s) {
-    d3.select("#overlay-air_density").classed("disabled", s === "surface");
-    d3.select("#overlay-wind_power_density").classed(
-      "disabled",
-      s === "surface"
-    );
-  });
+  // configuration.on("change:overlayType", function (x, ot) {
+  //   d3.select("#surface-level").classed(
+  //     "disabled",
+  //     ot === "air_density" || ot === "wind_power_density"
+  //   );
+  // });
+  // configuration.on("change:surface", function (x, s) {
+  //   d3.select("#overlay-air_density").classed("disabled", s === "surface");
+  //   d3.select("#overlay-wind_power_density").classed(
+  //     "disabled",
+  //     s === "surface"
+  //   );
+  // });
 
   // Add event handlers for the time navigation buttons.
-  d3.select("#nav-backward-more").on("click", navigate.bind(null, -10));
-  d3.select("#nav-forward-more").on("click", navigate.bind(null, +10));
-  d3.select("#nav-backward").on("click", navigate.bind(null, -1));
-  d3.select("#nav-forward").on("click", navigate.bind(null, +1));
-  d3.select("#nav-now").on("click", function () {
-    configuration.save({ date: "current", hour: "" });
-  });
+  // d3.select("#nav-backward-more").on("click", navigate.bind(null, -10));
+  // d3.select("#nav-forward-more").on("click", navigate.bind(null, +10));
+  // d3.select("#nav-backward").on("click", navigate.bind(null, -1));
+  // d3.select("#nav-forward").on("click", navigate.bind(null, +1));
+  // d3.select("#nav-now").on("click", function () {
+  //   configuration.save({ date: "current", hour: "" });
+  // });
 
   d3.select("#option-show-grid").on("click", function () {
-    configuration.save({
-      showGridPoints: !configuration.get("showGridPoints"),
-    });
+    // configuration.save({
+    //   showGridPoints: !configuration.get("showGridPoints"),
+    // });
   });
-  configuration.on("change:showGridPoints", function (x, showGridPoints) {
-    d3.select("#option-show-grid").classed("highlighted", showGridPoints);
-  });
+  // configuration.on("change:showGridPoints", function (x, showGridPoints) {
+  //   d3.select("#option-show-grid").classed("highlighted", showGridPoints);
+  // });
 
   // Add handlers for all wind level buttons.
   d3.selectAll(".surface").each(function () {
